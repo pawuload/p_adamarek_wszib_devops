@@ -1,5 +1,5 @@
 # ETAP 1: Builder - budowanie zależności i aplikacji
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Instalacja narzędzi potrzebnych do budowania
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 COPY app/ .
 
 # ETAP 2: Test - uruchamianie testów pytest
-FROM builder as test
+FROM builder AS test
 
 # Ustawienie zmiennych środowiskowych dla testów
 ENV PYTHONPATH=/app
@@ -30,7 +30,7 @@ RUN pip install --user pytest pytest-cov pytest-flask && \
     python -m pytest tests/ -v --tb=short || exit 1
 
 # ETAP 3: Final - lekki obraz produkcyjny
-FROM python:3.11-slim as final
+FROM python:3.11-slim AS final
 
 # Instalacja tylko runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

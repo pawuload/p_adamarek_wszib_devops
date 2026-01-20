@@ -6,18 +6,20 @@ from src.models import db, User, Task, Product
 def test_user_task_relationship(app, sample_user):
     """Test logiki: relacja między użytkownikiem a zadaniami."""
     with app.app_context():
+        # Użycie ID z fixture
+        user_id = sample_user.id
         # Tworzenie zadania przypisanego do użytkownika
         task1 = Task(
             title='Task 1',
             description='First task',
             status='pending',
-            user_id=sample_user.id
+            user_id=user_id
         )
         task2 = Task(
             title='Task 2',
             description='Second task',
             status='completed',
-            user_id=sample_user.id
+            user_id=user_id
         )
         
         db.session.add(task1)
@@ -25,23 +27,25 @@ def test_user_task_relationship(app, sample_user):
         db.session.commit()
         
         # Sprawdzenie relacji
-        user = User.query.get(sample_user.id)
+        user = User.query.get(user_id)
         assert len(user.tasks) == 2
         assert user.tasks[0].title == 'Task 1'
         assert user.tasks[1].title == 'Task 2'
         
         # Sprawdzenie backref
-        assert task1.user.username == sample_user.username
+        assert task1.user.username == 'testuser'  # Używamy wartości z fixture
 
 
 def test_task_status_workflow(app, sample_user):
     """Test logiki: przepływ statusów zadania."""
     with app.app_context():
+        # Użycie ID z fixture
+        user_id = sample_user.id
         task = Task(
             title='Workflow Test',
             description='Testing status changes',
             status='pending',
-            user_id=sample_user.id
+            user_id=user_id
         )
         db.session.add(task)
         db.session.commit()

@@ -27,13 +27,15 @@ def test_get_users_endpoint(client, sample_user):
     assert len(data['users']) >= 1
 
 
-def test_get_user_by_id_endpoint(client, sample_user):
+def test_get_user_by_id_endpoint(client, sample_user, app):
     """Test endpointu HTTP: GET /api/users/<id>."""
-    response = client.get(f'/api/users/{sample_user.id}')
+    # Użycie ID z fixture
+    user_id = sample_user.id
+    response = client.get(f'/api/users/{user_id}')
     
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert data['id'] == sample_user.id
+    assert data['id'] == user_id
     assert data['username'] == sample_user.username
     assert data['email'] == sample_user.email
 

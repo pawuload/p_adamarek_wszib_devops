@@ -37,6 +37,12 @@ def sample_user(app):
         user = User(username='testuser', email='test@example.com')
         db.session.add(user)
         db.session.commit()
+        # Pobranie ID przed wyjściem z kontekstu - ID jest dostępne nawet po expunge
+        user_id = user.id
+        # Odłączenie obiektu od sesji, ale ID pozostanie dostępne
+        db.session.expunge(user)
+        # Ustawienie ID bezpośrednio na obiekcie
+        user.id = user_id
         return user
 
 
@@ -44,12 +50,21 @@ def sample_user(app):
 def sample_task(app, sample_user):
     """Fixture tworząca przykładowe zadanie."""
     with app.app_context():
+        # Użycie ID z fixture sample_user (dostępne nawet po expunge)
+        user_id = sample_user.id
         task = Task(
             title='Test Task',
             description='Test Description',
             status='pending',
-            user_id=sample_user.id
+            user_id=user_id
         )
         db.session.add(task)
         db.session.commit()
+        # Pobranie ID przed wyjściem z kontekstu
+        task_id = task.id
+        # Odłączenie obiektu od sesji
+        db.session.expunge(task)
+        # Ustawienie ID bezpośrednio
+        task.id = task_id
+        task.user_id = user_id
         return task
