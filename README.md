@@ -52,3 +52,6 @@ docker-compose up --build
 - Automatyczne migracje i seedowanie bazy
 - Testy pytest w etapie build
 - CI/CD z GitHub Actions
+
+
+#Test Github Rules 3
