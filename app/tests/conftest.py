@@ -8,7 +8,8 @@ from src.config import Config
 class TestConfig(Config):
     """Konfiguracja testowa."""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@db:5432/test_db'
+    # Używamy SQLite w pamięci dla testów - działa bez zewnętrznej bazy danych
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False
 
 
