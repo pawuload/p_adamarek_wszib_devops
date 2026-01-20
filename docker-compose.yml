@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # Serwis bazy danych PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: devops_db
+    environment:
+      POSTGRES_DB: devops_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - back_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Serwis migracji bazy danych (jednorazowy)
+  migration_runner:
+    build:
+      context: .
+      target: final
+    container_name: devops_migration_runner
+    command: python run_migrations.py
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: devops_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    networks:
+      - back_net
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  # Serwis seedowania bazy danych (jednorazowy)
+  seed_runner:
+    build:
+      context: .
+      target: final
+    container_name: devops_seed_runner
+    command: python seed/run_seed.py
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: devops_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    volumes:
+      - seed_output:/seed_output
+    networks:
+      - back_net
+    depends_on:
+      - db
+      - migration_runner
+    restart: "no"
+
+  # Serwis aplikacji Flask
+  app:
+    build:
+      context: .
+      target: final
+    container_name: devops_app
+    command: python wsgi.py
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: devops_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      FLASK_DEBUG: "false"
+    networks:
+      - front_net
+      - back_net
+    depends_on:
+      - db
+      - seed_runner
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Serwis Nginx - reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: devops_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - front_net
+    depends_on:
+      - app
+    restart: unless-stopped
+
+# Definicja sieci Docker
+networks:
+  # Sieć frontendowa - dla ruchu publicznego (Nginx ↔ Flask)
+  front_net:
+    driver: bridge
+    name: devops_front_net
+
+  # Sieć backendowa - dla bazy danych (Flask ↔ PostgreSQL)
+  back_net:
+    driver: bridge
+    name: devops_back_net
+
+# Definicja wolumenów Docker
+volumes:
+  # Wolumen dla danych PostgreSQL
+  db_data:
+    name: devops_db_data
+
+  # Wolumen dla logów Nginx
+  nginx_logs:
+    name: devops_nginx_logs
+
+  # Wolumen dla plików wygenerowanych przez seeder
+  seed_output:
+    name: devops_seed_output
